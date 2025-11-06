@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>AI-Green Network — 데이터로 설계하는 기후 외교</title>
+
+  <!-- 폰트 (인터넷 연결 시 불러와짐) -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root{
+      --accent:#0b7a6b;
+      --accent-dark:#045953;
+      --muted:#6b7a7a;
+      --bg:#f6fbfb;
+      --card:#ffffff;
+      --glass: rgba(255,255,255,0.75);
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:Inter, system-ui, -apple-system, 'Noto Sans KR', sans-serif;
+      background: linear-gradient(180deg,#f6fbfb 0%, #eef7f6 100%);
+      color:#07323a;
+      line-height:1.5;
+    }
+
+    header.hero{
+      min-height:56vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      text-align:center;
+      padding:48px 20px;
+      background: linear-gradient(135deg, rgba(3,59,56,0.9), rgba(6,93,87,0.85)), url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="350"><rect width="100%" height="100%" fill="%230b2230"/></svg>') center/cover no-repeat;
+      color:white;
+    }
+    .hero-inner{max-width:1000px}
+    .title{
+      font-size:2.0rem;
+      margin:0 0 12px 0;
+      font-weight:700;
+      letter-spacing:-0.02em;
+    }
+    .subtitle{
+      margin:0 auto;
+      color:rgba(255,255,255,0.95);
+      font-size:1rem;
+      max-width:760px;
+    }
+    .cta-row{margin-top:18px; display:flex; gap:12px; justify-content:center; flex-wrap:wrap}
+    .btn{
+      background:var(--accent);
+      color:white;
+      border:none;
+      padding:10px 16px;
+      border-radius:8px;
+      cursor:pointer;
+      font-weight:600;
+    }
+
+    main{max-width:1100px;margin:28px auto;padding:0 20px 80px 20px}
+    section.card{
+      background:var(--card);
+      border-radius:12px;
+      padding:22px;
+      box-shadow:0 6px 18px rgba(6,50,50,0.06);
+      margin-bottom:20px;
+      border:1px solid rgba(7,50,50,0.03);
+    }
+    h2{margin:0 0 12px 0; color:var(--accent-dark)}
+    p.lead{color:var(--muted);margin:0 0 14px 0}
+    .two-col{display:grid;grid-template-columns:1fr 420px;gap:18px}
+    @media (max-width:920px){ .two-col{grid-template-columns:1fr} }
+
+    /* 그래프 박스 */
+    .viz{
+      background:linear-gradient(180deg, rgba(6,121,100,0.04), rgba(6,121,100,0.02));
+      border-radius:10px;
+      padding:14px;
+      min-height:220px;
+    }
+
+    /* 막대 그래프 스타일 */
+    .chart{
+      display:flex;
+      align-items:flex-end;
+      gap:10px;
+      height:170px;
+      padding:10px;
+    }
+    .bar{
+      flex:1 1 0;
+      max-width:90px;
+      display:flex;
+      align-items:flex-end;
+      justify-content:center;
+      cursor:pointer;
+      transition:transform .18s ease, box-shadow .18s ease;
+    }
+    .bar-inner{
+      width:100%;
+      border-radius:6px 6px 0 0;
+      background:linear-gradient(180deg,var(--accent) 0%, var(--accent-dark) 100%);
+      box-shadow:0 6px 12px rgba(11,122,107,0.18);
+      display:flex;
+      align-items:flex-end;
+      justify-content:center;
+      color:white;
+      font-size:12px;
+      padding-bottom:6px;
+      transition:height .6s cubic-bezier(.2,.9,.3,1), background .2s;
+    }
+    .bar:hover{transform:translateY(-6px)}
+    .bar-label{writing-mode:vertical-rl; transform:rotate(180deg); font-weight:600; font-size:12px; color:#04332f; margin-top:8px}
+
+    /* 네트워크 시뮬레이션 (간단 SVG) */
+    .network-wrap{padding:8px}
+    svg.network{width:100%; height:260px; display:block}
+
+    /* 툴팁 */
+    .tooltip{
+      position:fixed;
+      pointer-events:none;
+      background:rgba(3,50,50,0.95);
+      color:white;
+      padding:8px 10px;
+      border-radius:6px;
+      font-size:13px;
+      transform:translate(-50%,-120%);
+      white-space:nowrap;
+      z-index:9999;
+      display:none;
+    }
+
+    /* 요약 카드 */
+    .summary{display:flex;gap:12px;flex-wrap:wrap}
+    .chip{background:var(--glass);padding:10px 12px;border-radius:10px;border:1px solid rgba(4,89,83,0.06);font-weight:600;color:var(--accent-dark)}
+
+    footer{margin-top:30px;padding:24px 20px;text-align:center;color:var(--muted)}
+    small{display:block; margin-top:8px; color:#9aa7a6}
+  </style>
+</head>
+<body>
+
+  <header class="hero" role="banner" aria-label="AI for Climate Diplomacy 소개">
+    <div class="hero-inner">
+      <h1 class="title">AI-Green Network</h1>
+      <p class="subtitle">데이터 기반의 공정한 탄소 감축 협력 매칭 플랫폼 — 기후 불평등 해소를 위해 AI가 연결합니다.</p>
+      <div class="cta-row" role="navigation" aria-label="주요 동작">
+        <button class="btn" onclick="document.getElementById('problem').scrollIntoView({behavior:'smooth'})">문제의식 보기</button>
+        <button class="btn" onclick="document.getElementById('idea').scrollIntoView({behavior:'smooth'})">핵심 아이디어 보기</button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- 문제의식 -->
+    <section id="problem" class="card" aria-labelledby="problem-title">
+      <h2 id="problem-title">1) 문제의식</h2>
+      <p class="lead">
+        기후 위기 대응에서 가장 큰 장벽 중 하나는 국가 간 '역량(기술·자본) 불균형'과 '책임 배분' 문제다.
+        선진국과 개발도상국의 감축 부담이 불균형하면 국제 협약의 실효성이 떨어지고, 기후 정의가 위협받는다.
+      </p>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:12px">
+        <div style="flex:1;min-width:220px">
+          <strong>핵심 문제</strong>
+          <ul>
+            <li>개발도상국의 기술·재원 부족</li>
+            <li>NDC(국가온실가스감축목표) 이행의 불투명성</li>
+            <li>외교적 신뢰와 데이터의 부족</li>
+          </ul>
+        </div>
+        <div style="flex:1;min-width:220px">
+          <strong>해결의 의미</strong>
+          <ul>
+            <li>공정한 협력을 통한 지속가능한 발전 실현</li>
+            <li>국제협약의 신뢰성 및 실효성 강화</li>
+            <li>데이터 기반 외교로 정책 결정의 투명성 제고</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- 핵심 아이디어 -->
+    <section id="idea" class="card" aria-labelledby="idea-title">
+      <h2 id="idea-title">2) 핵심 아이디어 — AI 기반 국제 환경 협력 네트워크 (AI-Green Network)</h2>
+      <p class="lead">
+        AI-Green Network는 인공지능이 각국의 배출량, 산업구조, 재생에너지 투자, 사회경제지표 등을 분석해
+        '공정하고 실효성 있는 협력 매칭'을 제안하는 플랫폼이다. AI는 객관적 지표를 바탕으로 기술이전·공동사업·재원 배분 우선순위를 계산하여
+        외교적 협상에서 중립적 근거를 제공한다.
+      </p>
+
+      <div class="two-col" style="margin-top:14px">
+        <div>
+          <h3 style="margin:0 0 8px 0;color:var(--accent-dark)">세부 기능</h3>
+          <ul>
+            <li><strong>데이터 수집·정규화:</strong> 국가별 배출 데이터, 에너지 mix, 경제·사회 지표 통합</li>
+            <li><strong>협력 매칭 엔진:</strong> AI가 '공여국-수혜국' 매칭 및 프로젝트 유형(기술이전/펀딩/공동감축) 추천</li>
+            <li><strong>투명성 대시보드:</strong> 제안된 협력의 영향 예측(감축량·비용·형평성 지표) 제공</li>
+            <li><strong>정책 시뮬레이터:</strong> 가상의 협약·인센티브 구조를 적용해 결과 시뮬레이션</li>
+          </ul>
+        </div>
+
+        <div>
+          <h3 style="margin:0 0 8px 0;color:var(--accent-dark)">직접 작성 문구(웹페이지에 쓸 문장)</h3>
+          <div style="background:linear-gradient(180deg,#e9f7f5,#f6fffb);padding:12px;border-radius:8px;border:1px solid rgba(11,122,107,0.06)">
+            <p style="margin:0;font-weight:700; color:var(--accent-dark)">“AI는 객관적 데이터를 바탕으로 공정한 협력의 길을 제시합니다.”</p>
+            <p style="margin:6px 0 0 0;color:var(--muted)">“기후 정의는 데이터와 외교가 만날 때 실현된다.”</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 웹페이지 구현 내용 -->
+    <section id="implementation" class="card" aria-labelledby="impl-title">
+      <h2 id="impl-title">3) 웹페이지 구현 내용 (구성 & 인터랙션 예시)</h2>
+
+      <p class="lead">이 페이지는 학습용 프로토타입으로, 핵심 구성과 인터랙션을 시연한다. 아래 UI는 실제 플랫폼의 일부 기능을 시각적으로 보여준다.</p>
+
+      <div class="card" style="margin-bottom:12px">
+        <h3 style="margin:0 0 10px 0;color:var(--accent-dark)">메인 구성</h3>
+        <ul>
+          <li><strong>메인화면:</strong> 프로젝트 제목·간단 설명·탐색 버튼</li>
+          <li><strong>문제의식:</strong> 기후 불평등과 협력 필요성 요약</li>
+          <li><strong>핵심 아이디어:</strong> AI-Green Network 설명 및 기능 목록</li>
+          <li><strong>데이터 비주얼:</strong> 국가별 감축역량 막대 그래프 + 협력 네트워크 시각화</li>
+          <li><strong>정책 시뮬레이터(간단):</strong> 버튼 클릭으로 가상 협력 시나리오 생성</li>
+        </ul>
+      </div>
+
+      <!-- 시각자료: 막대그래프 -->
+      <div class="card" style="margin-bottom:12px">
+        <h3 style="margin:0 0 10px 0;color:var(--accent-dark)">시각자료 예시 — 국가별 감축역량 막대그래프 (인터랙티브)</h3>
+        <div class="viz" aria-hidden="false">
+          <div id="chart" class="chart" role="img" aria-label="국가별 감축역량 그래프">
+            <!-- 막대는 JS에서 삽입 -->
+          </div>
+          <div style="display:flex;justify-content:space-between;margin-top:8px;font-size:13px;color:var(--muted)">
+            <div>감축역량 (%) — 추정치</div>
+            <div>마우스 오버 → 추천 협력 유형 보기</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 시각자료: 네트워크 -->
+      <div class="card">
+        <h3 style="margin:0 0 10px 0;color:var(--accent-dark)">시각자료 예시 — 협력 네트워크 (매칭 시뮬레이션)</h3>
+        <div class="network-wrap">
+          <svg class="network" viewBox="0 0 1000 400" role="img" aria-label="국가 협력 네트워크 시각화">
+            <!-- 배경 그리기 -->
+            <defs>
+              <filter id="glow"><feGaussianBlur stdDeviation="4" result="coloredBlur"/><feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+            </defs>
+
+            <!-- 예시 노드: (좌)공여국들 -->
+            <g id="donors">
+              <circle cx="120" cy="80" r="28" fill="#2bbf9f"></circle>
+              <text x="120" y="86" fill="#04332f" font-size="12" font-weight="700" text-anchor="middle">SUI</text>
+
+              <circle cx="120" cy="200" r="26" fill="#2bbf9f"></circle>
+              <text x="120" y="206" fill="#04332f" font-size="12" font-weight="700" text-anchor="middle">NOR</text>
+
+              <circle cx="120" cy="320" r="30" fill="#2bbf9f"></circle>
+              <text x="120" y="326" fill="#04332f" font-size="12" font-weight="700" text-anchor="middle">KOR</text>
+            </g>
+
+            <!-- 예시 노드: (우)수혜국들 -->
+            <g id="recipients">
+              <circle cx="880" cy="100" r="30" fill="#ffd166"></circle>
+              <text x="880" y="106" fill="#5b3b00" font-size="12" font-weight="700" text-anchor="middle">BAN</text>
+
+              <circle cx="880" cy="220" r="28" fill="#ffd166"></circle>
+              <text x="880" y="226" fill="#5b3b00" font-size="12" font-weight="700" text-anchor="middle">NGA</text>
+
+              <circle cx="880" cy="330" r="26" fill="#ffd166"></circle>
+              <text x="880" y="336" fill="#5b3b00" font-size="12" font-weight="700" text-anchor="middle">IDN</text>
+            </g>
+
+            <!-- 중간: 매칭 노드 -->
+            <g id="match">
+              <rect x="420" y="140" width="160" height="120" rx="14" ry="14" fill="#e6fff9" stroke="#bdeedc" stroke-width="1"></rect>
+              <text x="500" y="190" fill="#045953" font-size="14" font-weight="700" text-anchor="middle">AI-Green Engine</text>
+              <text x="500" y="212" fill="#045953" font-size="12" text-anchor="middle">매칭 · 영향 예측 · 시뮬레이션</text>
+            </g>
+
+            <!-- 연결선 (예시) -->
+            <g stroke="#8fd7c6" stroke-width="2" stroke-linecap="round" opacity="0.9" filter="url(#glow)">
+              <path id="p1" d="M150 80 C 300 80, 380 170, 420 170" fill="none"></path>
+              <path id="p2" d="M150 200 C 300 210, 380 230, 420 220" fill="none"></path>
+              <path id="p3" d="M150 320 C 300 300, 380 260, 420 240" fill="none"></path>
+
+              <path id="q1" d="M580 170 C 620 170, 720 90, 850 100" fill="none"></path>
+              <path id="q2" d="M580 220 C 650 220, 760 220, 850 220" fill="none"></path>
+              <path id="q3" d="M580 240 C 700 280, 760 300, 850 320" fill="none"></path>
+            </g>
+
+          </svg>
+          <div style="margin-top:10px;color:var(--muted);font-size:13px">예시: 공여국(SUI, NOR, KOR)과 수혜국(BAN, NGA, IDN)을 AI가 매칭하여 협력방안(기술이전·펀딩)을 추천</div>
+        </div>
+      </div>
+
+      <!-- 정책 시뮬레이터 간단 인터랙션 -->
+      <div class="card" style="margin-top:14px">
+        <h3 style="margin:0 0 10px 0;color:var(--accent-dark)">간단 정책 시뮬레이터</h3>
+        <p style="margin:0 0 10px 0;color:var(--muted)">
+          아래 버튼을 누르면 AI가 '우선 매칭 결과'를 계산하여 요약을 보여준다. (시연용, 실제 AI 대신 간단 알고리즘 사용)
+        </p>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <button class="btn" id="simulateBtn">시뮬레이션 실행</button>
+          <button class="btn" id="resetBtn" style="background:#8ea7a0">리셋</button>
+        </div>
+        <div id="simulationResult" style="margin-top:12px;padding:12px;border-radius:8px;background:#fbfffd;border:1px solid rgba(11,122,107,0.06);display:none"></div>
+      </div>
+
+      <div style="margin-top:14px" class="card">
+        <h3 style="margin:0 0 10px 0;color:var(--accent-dark)">웹페이지의 주요 인터랙션 요약</h3>
+        <ul>
+          <li>막대그래프: 마우스오버 시 추천 협력 유형 툴팁 표시</li>
+          <li>네트워크: SVG 경로로 매칭 흐름 시각화 (애니메이션 가능)</li>
+          <li>정책 시뮬레이터: 버튼 클릭으로 가상 매칭 결과 텍스트 출력</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- 간단 저작권 / 연락 -->
+    <footer class="card" style="text-align:center">
+      <div style="font-weight:700">AI-Green Network (프로토타입)</div>
+      <small>© 2025 — 교육용 데모</small>
+    </footer>
+  </main>
+
+  <!-- 툴팁 엘리먼트 -->
+  <div id="tooltip" class="tooltip" role="status" aria-live="polite"></div>
+
+  <script>
+    // --- 데이터 (예시, 실사용시 API/DB 연동 필요) ---
+    const countries = [
+      {code:'SUI', name:'Switzerland', capacity:92, recommended:'기술이전(에너지효율)'},
+      {code:'NOR', name:'Norway', capacity:88, recommended:'재생에너지 펀딩'},
+      {code:'KOR', name:'Korea', capacity:80, recommended:'스마트그리드 협력'},
+      {code:'BAN', name:'Bangladesh', capacity:40, recommended:'기술도입+자금지원'},
+      {code:'NGA', name:'Nigeria', capacity:35, recommended:'현지 재생에너지 파일럿'},
+      {code:'IDN', name:'Indonesia', capacity:50, recommended:'산림보호·탄소상쇄 협력'}
+    ];
+
+    // --- 차트 렌더링 ---
+    const chart = document.getElementById('chart');
+    const tooltip = document.getElementById('tooltip');
+
+    function renderChart() {
+      chart.innerHTML = '';
+      // show donors first (higher capacity), then recipients
+      const order = ['SUI','NOR','KOR','IDN','BAN','NGA'];
+      order.forEach(code => {
+        const d = countries.find(c=>c.code===code);
+        const bar = document.createElement('div');
+        bar.className = 'bar';
+        bar.setAttribute('tabindex','0');
+        const barInner = document.createElement('div');
+        barInner.className = 'bar-inner';
+        // height percent (visual)
+        const h = Math.max(12, d.capacity); // ensure visible
+        barInner.style.height = h + 'px';
+        barInner.style.minHeight = '24px';
+        barInner.textContent = d.capacity + '%';
+        const label = document.createElement('div');
+        label.className = 'bar-label';
+        label.textContent = d.code;
+
+        bar.appendChild(barInner);
+        bar.appendChild(label);
+        chart.appendChild(bar);
+
+        // events: show tooltip
+        function showTip(e) {
+          const rect = bar.getBoundingClientRect();
+          tooltip.style.left = (rect.left + rect.width/2) + 'px';
+          tooltip.style.top = (rect.top) + 'px';
+          tooltip.style.display = 'block';
+          tooltip.textContent = d.name + ' — 추천: ' + d.recommended + ' · 감축역량: ' + d.capacity + '%';
+        }
+        function hideTip() { tooltip.style.display = 'none'; }
+
+        bar.addEventListener('mouseenter', showTip);
+        bar.addEventListener('focus', showTip);
+        bar.addEventListener('mouseleave', hideTip);
+        bar.addEventListener('blur', hideTip);
+
+        // small hover animation
+        bar.addEventListener('mouseover', () => { barInner.style.transform='scaleY(1.08)'; barInner.style.boxShadow='0 10px 20px rgba(11,122,107,0.2)'; });
+        bar.addEventListener('mouseout', () => { barInner.style.transform='scaleY(1)'; barInner.style.boxShadow='0 6px 12px rgba(11,122,107,0.18)'; });
+      });
+    }
+
+    renderChart();
+
+    // --- 간단 시뮬레이터 (시연용) ---
+    const simulateBtn = document.getElementById('simulateBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const simResult = document.getElementById('simulationResult');
+
+    simulateBtn.addEventListener('click', () => {
+      // 간단한 '매칭 알고리즘' 시뮬레이션: 높은 capacity 공여국과 낮은 capacity 수혜국 매칭
+      const donors = countries.filter(c=>c.capacity>=80).map(c=>c.code);
+      const recipients = countries.filter(c=>c.capacity<60).map(c=>c.code);
+      let lines = [];
+      let idx = 0;
+      donors.forEach(d => {
+        const r = recipients[idx % recipients.length];
+        lines.push(`${d} → ${r} : 추천협력 = ${countries.find(x=>x.code===r).recommended}`);
+        idx++;
+      });
+      simResult.style.display = 'block';
+      simResult.innerHTML = '<strong>우선 매칭(시연):</strong><br>' + lines.join('<br>');
+    });
+
+    resetBtn.addEventListener('click', () => {
+      simResult.style.display = 'none';
+      simResult.innerHTML = '';
+    });
+
+    // --- 네트워크 애니메이션 (간단) ---
+    const paths = Array.from(document.querySelectorAll('.network path'));
+    // 애니메이션: stroke-dashoffset trick
+    function animateNetwork() {
+      paths.forEach((p, i) => {
+        const len = p.getTotalLength();
+        p.style.strokeDasharray = len;
+        p.style.strokeDashoffset = len;
+        p.getBoundingClientRect(); // trigger reflow
+        p.style.transition = 'stroke-dashoffset 1.2s ' + (i*0.15) + 's ease-out';
+        p.style.strokeDashoffset = '0';
+      });
+    }
+    // 시작 애니메이션
+    window.addEventListener('load', ()=> setTimeout(animateNetwork, 400));
+
+    // 툴팁: 화면 리사이즈시 숨기기
+    window.addEventListener('resize', ()=> tooltip.style.display='none');
+
+  </script>
+</body>
+</html>
